@@ -1,0 +1,29 @@
+{
+  "name": "darkweb-chatroom-server",
+  "version": "1.0.0",
+  "description": "Backend server for darkweb chatroom",
+  "main": "index.js",
+  "scripts": {
+    "dev": "nodemon index.js",
+    "start": "node index.js"
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "socket.io": "^4.7.4",
+    "bcrypt": "^5.1.1",
+    "express-session": "^1.17.3",
+    "cors": "^2.8.5",
+    "helmet": "^7.1.0",
+    "express-rate-limit": "^7.1.5",
+    "express-validator": "^7.0.1",
+    "dompurify": "^3.0.5",
+    "jsdom": "^23.0.1",
+    "prisma": "^5.7.1",
+    "@prisma/client": "^5.7.1",
+    "dotenv": "^16.3.1",
+    "axios": "^1.6.2"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.2"
+  }
+}

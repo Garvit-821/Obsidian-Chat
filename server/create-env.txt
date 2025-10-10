@@ -1,0 +1,21 @@
+# Create a .env file in the server directory with this content:
+
+# Database (SQLite - automatically set up!)
+# The database file is located at: server/prisma/dev.db
+
+# Session Secret
+SESSION_SECRET="darkweb-chatroom-super-secret-session-key-2024"
+
+# reCAPTCHA (Optional - using math captcha for now)
+RECAPTCHA_SECRET_KEY=""
+RECAPTCHA_SITE_KEY=""
+
+# Server
+PORT=3001
+NODE_ENV=development
+
+# Instructions:
+# 1. Copy this content
+# 2. Create a new file called .env in the server directory
+# 3. Paste this content into the .env file
+# 4. Save the file
