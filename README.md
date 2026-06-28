@@ -4,6 +4,28 @@ A fully immersive real-time terminal-style chatroom application with a professio
 
 ![Obsidian Chatroom](https://img.shields.io/badge/Node.js-18+-green) ![React](https://img.shields.io/badge/React-18+-blue) ![Socket.IO](https://img.shields.io/badge/Socket.IO-4.7+-orange) ![SQLite](https://img.shields.io/badge/SQLite-3+-blue) ![Terminal](https://img.shields.io/badge/Terminal-Style-brightgreen)
 
+## 📑 Table of Contents
+- [🎯 Features](#-features)
+- [🏗️ Architecture & System Design](#️-architecture--system-design)
+  - [System Architecture](#system-architecture)
+  - [Database Schema (ERD)](#database-schema-erd)
+  - [Authentication Flow](#authentication-flow)
+  - [Real-time Messaging Flow](#real-time-messaging-flow)
+  - [Component Architecture](#component-architecture)
+- [🛠️ Quick Start](#️-quick-start)
+- [📁 Project Structure](#-project-structure)
+- [🎮 Usage](#-usage)
+- [🔧 Configuration](#-configuration)
+- [🖥️ Terminal Interface Showcase](#️-terminal-interface-showcase)
+- [🚀 Deployment](#-deployment)
+- [🛡️ Security Considerations](#️-security-considerations)
+- [🎨 Customization](#-customization)
+- [🐛 Troubleshooting](#-troubleshooting)
+- [📝 API Endpoints](#-api-endpoints)
+- [🤝 Contributing](#-contributing)
+- [📄 License](#-license)
+- [🎯 Roadmap](#-roadmap)
+
 ## 🎯 Features
 
 ### 🧠 Core Functionality
@@ -48,6 +70,117 @@ A fully immersive real-time terminal-style chatroom application with a professio
 - **Authentication**: bcrypt + express-session
 - **Real-time**: Socket.IO WebSockets with ping/pong monitoring
 
+## 🏗️ Architecture & System Design
+
+To provide a comprehensive understanding of how Obsidian operates, below are visual representations of the system architecture, database structure, and core workflows.
+
+### System Architecture
+The application follows a standard client-server model augmented with WebSockets for real-time bidirectional communication.
+
+```mermaid
+graph TD
+    Client[React Frontend - Terminal UI]
+    Server[Node.js Express Server]
+    SocketIO[Socket.IO Server]
+    SQLite[(SQLite Database)]
+    Prisma[Prisma ORM]
+
+    Client <-->|HTTP/REST| Server
+    Client <-->|WebSockets| SocketIO
+    Server <-->|Queries| Prisma
+    SocketIO <-->|Queries| Prisma
+    Prisma <-->|R/W| SQLite
+```
+
+### Database Schema (ERD)
+Obsidian uses SQLite via Prisma ORM. The relational model is intentionally kept lightweight and efficient.
+
+```mermaid
+erDiagram
+    User ||--o{ Message : sends
+    User {
+        string id PK "cuid()"
+        string username UK
+        string password "hashed"
+        datetime createdAt
+        datetime updatedAt
+    }
+    Message {
+        string id PK "cuid()"
+        string content
+        string userId FK
+        string room
+        datetime createdAt
+    }
+```
+
+### Authentication Flow
+User authentication is managed securely using bcrypt and express-session cookies.
+
+```mermaid
+sequenceDiagram
+    participant U as User (React Client)
+    participant S as Express Server
+    participant DB as SQLite (Prisma)
+
+    Note over U,DB: User Registration
+    U->>S: POST /api/auth/register (username, password, captcha)
+    S->>S: Validate Captcha & Inputs
+    S->>S: Hash Password (bcrypt)
+    S->>DB: Create User Record
+    DB-->>S: User Created
+    S-->>U: 201 Created (Success)
+
+    Note over U,DB: User Login
+    U->>S: POST /api/auth/login (username, password)
+    S->>DB: Find User by Username
+    DB-->>S: User Record
+    S->>S: Compare Password Hash
+    S->>S: Initialize Session (express-session)
+    S-->>U: 200 OK (Set-Cookie)
+```
+
+### Real-time Messaging Flow
+Real-time interaction relies on Socket.IO, enabling instant delivery and multi-room broadcasting.
+
+```mermaid
+sequenceDiagram
+    participant C as Client (User A)
+    participant S as Socket.IO Server
+    participant DB as Database
+    participant C2 as Client (User B)
+
+    C->>S: Connect (with session cookie)
+    S-->>C: Connected (Ack)
+    
+    C->>S: joinRoom('general')
+    S->>C2: emit('userJoined', userA)
+    
+    C->>S: sendMessage({content: "Hello!", room: "general"})
+    S->>DB: Save Message
+    DB-->>S: Message Saved
+    S->>C: emit('message', savedMessage)
+    S->>C2: emit('message', savedMessage)
+```
+
+### Component Architecture
+The React frontend is component-driven, heavily utilizing hooks to manage terminal UI state and WebSocket connections.
+
+```mermaid
+graph TD
+    App[App.jsx] --> Auth[AuthForm.jsx]
+    App --> Chat[ChatRoom.jsx]
+    
+    Chat --> Messages[MessageList]
+    Chat --> Input[MessageInput]
+    
+    Chat --> Sidebar[Sidebar Panels]
+    Sidebar --> Members[MemberList.jsx]
+    Sidebar --> Clock[TimezoneClock.jsx]
+    Sidebar --> Ping[PingDisplay.jsx]
+    Sidebar --> Sys[SystemInfo.jsx]
+```
+
 ## 🛠️ Quick Start
 
 ### Prerequisites
@@ -72,7 +205,7 @@ A fully immersive real-time terminal-style chatroom application with a professio
    ```
    This creates a SQLite database file at `server/prisma/dev.db` - no additional setup needed!
 
-4. **Start the application:**
+3. **Start the application:**
    ```bash
    # From root directory
    npm run dev
@@ -83,30 +216,6 @@ This will start:
 - Frontend development server on `http://localhost:5173` (or next available port)
 
 **Note**: If ports are in use, Vite will automatically find the next available port (5174, 5175, etc.)
-
-### Troubleshooting
-
-#### Server Port Conflicts
-If you encounter "address already in use" errors:
-
-1. **Kill existing processes:**
-   ```bash
-   # Windows
-   netstat -ano | findstr :3001
-   taskkill /PID <PID_NUMBER> /F
-   
-   # macOS/Linux
-   lsof -ti:3001 | xargs kill -9
-   ```
-
-2. **Or restart your terminal** and try again
-
-#### Frontend Port Issues
-The frontend automatically finds available ports. If you need a specific port:
-```bash
-cd client
-npm run dev -- --port 3000
-```
 
 ## 📁 Project Structure
 
@@ -177,9 +286,9 @@ PORT=3001
 NODE_ENV=development
 ```
 
-### Database Schema
+### Database Schema Details
 
-The application uses SQLite with the following Prisma schema:
+The application uses SQLite with the following Prisma schema logic:
 
 ```prisma
 model User {
@@ -201,10 +310,9 @@ model Message {
 }
 ```
 
-### Component Architecture
+### Component Architecture Details
 
 The enhanced terminal interface includes these key components:
-
 - **AuthForm**: Terminal-style authentication with math CAPTCHA
 - **ChatRoom**: Main chatroom with multi-panel dashboard
 - **MemberList**: Active users with real-time ping measurements
@@ -258,7 +366,7 @@ The enhanced terminal interface provides a comprehensive dashboard with multiple
    ```bash
    NODE_ENV=production
    SESSION_SECRET=your-secure-session-secret
-   DATABASE_URL=your-production-database-url
+   # Ensure SQLite is accessible or switch to PostgreSQL
    ```
 
 2. **Build Frontend:**
@@ -321,24 +429,21 @@ const rooms = [
 
 ### Common Issues
 
-1. **Database Connection Failed:**
-   - Check PostgreSQL is running
-   - Verify DATABASE_URL in .env
-   - Ensure database exists
+1. **Port Conflicts (`EADDRINUSE`):**
+   ```bash
+   # Kill process occupying port 3001 (macOS/Linux)
+   lsof -ti:3001 | xargs kill -9
+   ```
+2. **Database Generation Failed:**
+   Run `npx prisma generate` again inside the `/server` directory.
 
-2. **Socket.IO Connection Issues:**
-   - Check CORS configuration
-   - Verify server is running on port 3001
-   - Check firewall settings
-
-3. **Authentication Problems:**
-   - Clear browser cookies
-   - Check session secret is set
-   - Verify bcrypt is working
+3. **Socket.IO Connection Issues:**
+   - Check CORS configuration in Express
+   - Verify client connects to the correct port (usually 3001)
 
 ### Debug Mode
 
-Enable debug logging:
+Enable debug logging to see full Socket.IO output:
 
 ```bash
 DEBUG=socket.io:* npm run dev
@@ -350,11 +455,11 @@ DEBUG=socket.io:* npm run dev
 - `POST /api/auth/register` - User registration
 - `POST /api/auth/login` - User login
 - `POST /api/auth/logout` - User logout
-- `GET /api/auth/me` - Get current user
+- `GET /api/auth/me` - Get current user status
 
 ### Messages
-- `GET /api/messages/:room` - Get room messages
-- `WebSocket` - Real-time messaging
+- `GET /api/messages/:room` - Fetch chat history for a room
+- `WebSocket` - Emit/listen for real-time messages
 
 ## 🤝 Contributing
 
